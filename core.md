@@ -680,11 +680,84 @@ Val from non-static
 
 ## Какие существуют особенности использования вложенных классов: статических и внутренних? В чем заключается разница между ними?
 
-+ Вложенные классы могут обращаться ко всем членам обрамляющего класса, в том числе и приватным. 
-+ Для создания объекта статического вложенного класса объект внешнего класса не требуется.
-+ Из объекта статического вложенного класса нельзя обращаться к не статическим членам обрамляющего класса напрямую, а только через ссылку на экземпляр внешнего класса.
-+ Обычные вложенные классы не могут содержать статических методов, блоков инициализации и классов. Статические вложенные классы - могут.
-+ В объекте обычного вложенного класса хранится ссылка на объект внешнего класса. Внутри статической такой ссылки нет. Доступ к экземпляру обрамляющего класса осуществляется через указание `.this` после его имени. Например: `Outer.this`.
+Вложенные классы в Java делятся на **статические вложенные классы** (static nested classes) и **внутренние классы** (inner classes, non-static). Их особенности и различия:
+
+- **Внутренний класс (inner class)**:
+  - Требует экземпляр внешнего класса для создания: `Outer outer = new Outer(); Outer.Inner inner = outer.new Inner();`.  
+  - Хранит неявную ссылку на внешний экземпляр, доступ через `Outer.this`.  
+  - Имеет прямой доступ ко всем членам внешнего класса (включая private, статические и нестатические).  
+  - **Нельзя** содержать статические методы, блоки инициализации или классы, кроме `static final` полей (констант).  
+  - Используется для тесной связи с внешним классом (например, итераторы в коллекциях).  
+
+- **Статический вложенный класс (static nested class)**:
+  - Создаётся без экземпляра внешнего: `Outer.StaticNested nested = new Outer.StaticNested();`.  
+  - Не хранит ссылку на внешний экземпляр, поэтому `Outer.this` недоступно.  
+  - Доступ только к статическим членам внешнего класса напрямую; для нестатических нужен экземпляр `Outer`.  
+  - Может содержать статические методы, поля, блоки инициализации и вложенные классы.  
+  - Используется для независимых утилит, связанных с внешним классом (например, Builder).  
+
+**Дополнительные особенности**:
+- Оба типа могут быть private, protected, public или package-private для инкапсуляции.  
+- Внутренние классы могут вызывать утечки памяти, если их объекты живут дольше внешнего.  
+- При компиляции: `Outer$Inner.class` для внутреннего, `Outer$StaticNested.class` для статического.  
+
+**Примеры**:
+1. **Внутренний класс**:
+```java
+public class Outer
+{
+    private int nonStaticField = 10;
+    private static int staticField = 20;
+
+    class Inner
+    {
+        void accessMembers()
+        {
+            System.out.println(nonStaticField); // OK
+            System.out.println(staticField); // OK
+            System.out.println(Outer.this.nonStaticField); // Через Outer.this
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        Outer outer = new Outer();
+        Outer.Inner inner = outer.new Inner();
+        inner.accessMembers();
+    }
+}
+```
+
+2. **Статический вложенный класс**:  
+```java
+public class Outer
+{
+    private int nonStaticField = 10;
+    private static int staticField = 20;
+
+    static class StaticNested
+    {
+        void accessMembers()
+        {
+            System.out.println(staticField); // OK
+            Outer outer = new Outer();
+            System.out.println(outer.nonStaticField); // Через экземпляр
+        }
+
+        static int staticVar = 30;
+        static
+        {
+            System.out.println("Static block");
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        Outer.StaticNested nested = new Outer.StaticNested();
+        nested.accessMembers();
+    }
+}
+```
 
 [к оглавлению](#java-core)
 
